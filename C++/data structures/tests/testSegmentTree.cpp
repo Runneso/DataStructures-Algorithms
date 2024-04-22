@@ -12,12 +12,16 @@ int main(){
     int n = 100;
     int tests=10e3;
     vector<int> array(n,0);
+
     for (int index=0;index<n;index++){
         array[index]=rand()%(int)(10e8+1);
     }
+
     SegmentTree tree{array};
+
     for (int test=0;test<tests;test++){
         int action = rand()%(2);
+        
         if (action){
             int left = rand()%(n);
             int right = rand()%(n-left)+left;
