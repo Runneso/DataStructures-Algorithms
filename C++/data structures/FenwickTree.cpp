@@ -8,16 +8,42 @@ struct FenwickTree {
     vector<T> BIT;
     vector<T> array;
 
-    explicit FenwickTree(vector<T> &seq) {
+    function<T(T, T)> action;
+    function<T(T, T)> reverse_action;
+
+    explicit FenwickTree(vector<T> &seq, T action(T, T), T reverse_action(T, T)) {
         this->n = seq.size();
         this->BIT.assign(n, 0);
         this->array = vector<T>(seq);
+
+        this->action = action;
+        this->reverse_action = reverse_action;
+
+        this->build();
+    }
+
+    explicit FenwickTree(vector<T> &seq) {
+        this->n = seq.size();
+        this->BIT.assign(n, 0);
+        this->array = seq;
+
+        this->action = [&](T a, T b) {
+            return a + b;
+        };
+        this->reverse_action = [&](T a, T b) {
+            return a - b;
+        };
+
         this->build();
     }
 
     void build() {
-        for (int64_t index = 0; index < this->n; ++index) {
-            modify(index, this->array[index]);
+        this->BIT = this->array;
+        for (int64_t index = 0; index < n; ++index) {
+            int64_t j = index | (index + 1);
+            if (j < n) {
+                BIT[j] = action(BIT[j], BIT[index]);
+            }
         }
     }
 
@@ -37,13 +63,16 @@ struct FenwickTree {
     T sum(int64_t i) {
         T ans = 0;
         while (i >= 0) {
-            ans += this->BIT[i];
+            ans = this->action(ans, this->BIT[i]);
             i = (i & (i + 1)) - 1;
         }
         return ans;
     }
 
     T query(const int64_t l, const int64_t r) {
-        return this->sum(r) - this->sum(l - 1);
+        if (l == 0) {
+            return sum(r);
+        }
+        return this->reverse_action(this->sum(r), this->sum(l - 1));
     }
 };
