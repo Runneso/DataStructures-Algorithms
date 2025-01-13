@@ -8,7 +8,7 @@ struct BinaryHeap {
 
     function<bool(T, T)> compare;
 
-    BinaryHeap() {
+    explicit BinaryHeap() {
         heap = vector<T>();
         compare = [](T a, T b) {
             return a > b;
