@@ -38,6 +38,10 @@ bool isPrime(const uint64_t n) {
 }
 
 bool bruteIsPrime(const uint64_t n) {
+    if (n < 2) {
+        return false;
+    }
+
     uint64_t div = 2;
 
     while (div * div <= n) {
