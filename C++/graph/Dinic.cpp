@@ -59,7 +59,7 @@ struct Dinic {
 
     void add_edge(ll from, ll to, ll cap) {
         edges.push_back({from, to, cap});
-        edges.push_back({to, from, cap}); // use cap of undirected graph
+        edges.push_back({to, from, 0}); // use cap of undirected graph
         graph[from].push_back(m);
         graph[to].push_back(m + 1);
         m += 2;
