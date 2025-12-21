@@ -35,135 +35,142 @@ using ordered_multiset = tree<T, null_type, less_equal<T>, rb_tree_tag, tree_ord
 // num % mod = (num % mod + mod) % mod
 // rand() % (end - start + 1) + start;
 
+struct Edge {
+    ll from, to, cap, flow = 0;
+
+    Edge(ll from, ll to, ll cap) : from(from), to(to), cap(cap) {
+    }
+};
+
 struct Dinic {
-    static constexpr ll INF = (1LL<<62);
+    vector<Edge> edges;
+    vector<vector<ll> > graph;
+    ll n = 0, m = 0, Q = 30;
+    ll s, t;
+    vector<ll> level, ptrs;
+    queue<ll> q;
 
-    struct Edge {
-        ll to, rev;
-        ll cap;
-    };
-
-    struct OrigEdgeRef {
-        ll from, idx;
-        ll cap0;
-    };
-
-    ll n;
-    vector<vector<Edge>> g;
-    vector<ll> level, it;
-    vector<OrigEdgeRef> orig;
-
-    Dinic(ll n_ = 0) { init(n_); }
-
-    void init(ll n_) {
-        n = n_;
-        g.assign((size_t)n, {});
-        level.assign((size_t)n, 0);
-        it.assign((size_t)n, 0);
-        orig.clear();
+    Dinic(ll n, ll s, ll t): n(n), s(s), t(t) {
+        edges.reserve(2 * n);
+        graph.resize(n);
+        level.resize(n);
+        ptrs.resize(n);
     }
 
-    void add_edge(ll u, ll v, ll cap) {
-        Edge a{v, (ll)g[(size_t)v].size(), cap};
-        Edge b{u, (ll)g[(size_t)u].size(), 0};
-        g[(size_t)u].push_back(a);
-        g[(size_t)v].push_back(b);
-        orig.push_back({u, (ll)g[(size_t)u].size() - 1, cap});
+    void add_edge(ll from, ll to, ll cap) {
+        edges.push_back({from, to, cap});
+        edges.push_back({to, from, cap}); // use cap of undirected graph
+        graph[from].push_back(m);
+        graph[to].push_back(m + 1);
+        m += 2;
     }
 
-    void add_undirected(ll u, ll v, ll cap) {
-        add_edge(u, v, cap);
-        add_edge(v, u, cap);
-    }
 
-    bool bfs(ll s, ll t) {
-        fill(all(level), -1);
-        queue<ll> q;
-        level[(size_t)s] = 0;
-        q.push(s);
+    bool bfs(ll limit) {
+        prepare();
         while (!q.empty()) {
-            ll v = q.front(); q.pop();
-            for (auto &e : g[(size_t)v]) {
-                if (e.cap > 0 && level[(size_t)e.to] == -1) {
-                    level[(size_t)e.to] = level[(size_t)v] + 1;
-                    q.push(e.to);
+            ll node = q.front();
+            q.pop();
+
+            for (ll edge_id: graph[node]) {
+                Edge &edge = edges[edge_id];
+                ll remaining = edge.cap - edge.flow;
+                if (remaining == 0 || remaining < limit) {
+                    continue;
                 }
+                if (level[edge.to] != -1) {
+                    continue;
+                }
+                level[edge.to] = 1 + level[edge.from];
+                q.push(edge.to);
             }
         }
-        return level[(size_t)t] != -1;
+        return level[t] != -1;
     }
 
-    ll dfs(ll v, ll t, ll pushed) {
-        if (!pushed) return 0;
-        if (v == t) return pushed;
-        for (ll &i = it[(size_t)v]; i < (ll)g[(size_t)v].size(); i++) {
-            Edge &e = g[(size_t)v][(size_t)i];
-            if (e.cap > 0 && level[(size_t)e.to] == level[(size_t)v] + 1) {
-                ll tr = dfs(e.to, t, min(pushed, e.cap));
-                if (!tr) continue;
-                e.cap -= tr;
-                g[(size_t)e.to][(size_t)e.rev].cap += tr;
-                return tr;
-            }
+    ll dfs(ll node, ll minimum, ll limit) {
+        if (minimum == 0) {
+            return 0;
         }
+        if (node == t) {
+            return minimum;
+        }
+
+        for (ll &ptr = ptrs[node]; ptr < graph[node].size(); ptr++) {
+            ll edge_id = graph[node][ptr];
+            Edge &edge = edges[edge_id];
+            ll remaining = edge.cap - edge.flow;
+
+            if (level[edge.to] != level[edge.from] + 1) {
+                continue;
+            }
+            if (remaining < limit) {
+                continue;
+            }
+
+            ll pushed = dfs(edge.to, min(minimum, remaining), limit);
+
+            if (pushed == 0) {
+                continue;
+            }
+
+            edges[edge_id].flow += pushed;
+            edges[edge_id ^ 1].flow -= pushed;
+            return pushed;
+        }
+
         return 0;
     }
 
-    ll max_flow(ll s, ll t) {
+    void prepare() {
+        fill(all(level), -1);
+        fill(all(ptrs), 0);
+        level[s] = 0;
+        q.push(s);
+    }
+
+    void compute() {
+        for (ll delta = 1LL << Q; delta > 0; delta >>= 1) {
+            while (bfs(delta)) {
+                while (dfs(s,LLONG_MAX, delta)) {
+                }
+            }
+        }
+    }
+
+    ll max_flow() {
         ll flow = 0;
-        while (bfs(s, t)) {
-            fill(all(it), 0);
-            while (ll pushed = dfs(s, t, INF)) flow += pushed;
+        for (ll edge_id: graph[s]) {
+            if (edges[edge_id].flow > 0) {
+                flow += edges[edge_id].flow;
+            }
         }
         return flow;
     }
 
-    vector<ll> min_cut_side(ll s) {
-        vector<ll> vis((size_t)n, 0);
-        queue<ll> q;
-        vis[(size_t)s] = 1;
-        q.push(s);
-        while (!q.empty()) {
-            ll v = q.front(); q.pop();
-            for (auto &e : g[(size_t)v]) {
-                if (e.cap > 0 && !vis[(size_t)e.to]) {
-                    vis[(size_t)e.to] = 1;
-                    q.push(e.to);
+    vector<ll> min_cut() {
+        vector<ll> cut;
+        vector<bool> visited(n, false);
+
+        function<void(ll)> cut_dfs = [&](ll node) {
+            visited[node] = true;
+            for (ll edge_id: graph[node]) {
+                Edge &edge = edges[edge_id];
+                if (!visited[edge.to] && edge.cap > edge.flow) {
+                    cut_dfs(edge.to);
                 }
             }
-        }
-        return vis;
-    }
+        };
 
-    tuple<vector<ll>, vector<pair<ll,ll>>, ll> min_cut(ll s) {
-        auto side = min_cut_side(s);
-        vector<pair<ll,ll>> cut_edges;
-        ll cut_value = 0;
+        cut_dfs(s);
 
-        for (auto &r : orig) {
-            ll u = r.from;
-            Edge &e = g[(size_t)u][(size_t)r.idx];
-            ll v = e.to;
-            if (side[(size_t)u] == 1 && side[(size_t)v] == 0 && r.cap0 > 0) {
-                cut_edges.push_back({u, v});
-                cut_value += r.cap0;
+        for (ll index = 0; index < m; index += 2) {
+            Edge &edge = edges[index];
+            if (visited[edge.from] != visited[edge.to]) {
+                cut.push_back(index);
             }
         }
-        return {side, cut_edges, cut_value};
+
+        return cut;
     }
 };
-
-void solution() {
-}
-
-int main() {
-    srand(time(nullptr));
-    ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
-    cout.tie(nullptr);
-    ll t = 1;
-    // cin>>t;
-    while (t--) {
-        solution();
-    }
-}
