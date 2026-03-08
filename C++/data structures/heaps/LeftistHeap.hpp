@@ -40,7 +40,7 @@ namespace leftistHeap {
         }
     };
 
-    int getDist(Node *root) {
+    ll get_dist(Node *root) {
         return root ? root->dist : 0;
     }
 
@@ -59,11 +59,11 @@ namespace leftistHeap {
         x->right = merge(x->right, y);
 
 
-        if (getDist(x->right) > getDist(x->left)) {
+        if (get_dist(x->right) > get_dist(x->left)) {
             swap(x->right, x->left);
         }
 
-        x->dist = 1 + min(getDist(x->left), getDist(x->right));
+        x->dist = 1 + min(get_dist(x->left), get_dist(x->right));
         return x;
     }
 
