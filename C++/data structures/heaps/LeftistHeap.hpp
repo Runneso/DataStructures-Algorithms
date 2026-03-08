@@ -77,7 +77,19 @@ namespace leftistHeap {
     }
 
     Node *pop(Node *root) {
-        return merge(root->left, root->right);
+        if (root == nullptr) {
+            return nullptr;
+        }
+
+        Node *left = root->left;
+        Node *right = root->right;
+
+        root->left = nullptr;
+        root->right = nullptr;
+
+        Node *new_root = merge(left, right);
+        delete root;
+        return new_root;
     }
 
     bool empty(Node *root) {
