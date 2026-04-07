@@ -275,19 +275,44 @@ struct MCMF {
 };
 
 void solution() {
-    ll n, m;
-    cin >> n >> m;
+    ll n;
+    cin >> n;
+    vector<vector<ll> > graph(n, vector<ll>(n));
 
-    MCMF mcmf(n, m, 0, n - 1);
-
-    for (ll index = 0; index < m; index++) {
-        ll u, v, cap, cost;
-        cin >> u >> v >> cap >> cost;
-        u--, v--;
-        mcmf.add_edge(u, v, cap, cost);
+    for (ll index_i = 0; index_i < n; index_i++) {
+        for (ll index_j = 0; index_j < n; index_j++) {
+            cin >> graph[index_i][index_j];
+        }
     }
-    auto [flow, cost] = mcmf.min_cost_max_flow();
-    cout << flow << ' ' << cost << endl;
+
+    ll N = 2 * n + 2;
+    ll m = n * n + 2 * n;
+
+    MCMF mcmf(N, m, N - 2, N - 1);
+
+    for (ll index = 0; index < n; index++) {
+        mcmf.add_edge(N - 2, index, 1, 0);
+    }
+    for (ll index = 0; index < n; index++) {
+        mcmf.add_edge(index + n, N - 1, 1, 0);
+    }
+
+    for (ll index_i = 0; index_i < n; index_i++) {
+        for (ll index_j = 0; index_j < n; index_j++) {
+            mcmf.add_edge(index_i, index_j + n, 1, graph[index_i][index_j]);
+        }
+    }
+
+    cout << mcmf.min_cost_max_flow().second << endl;
+
+    for (ll index_i = 0; index_i < n; index_i++) {
+        for (ll id: mcmf.graph[index_i]) {
+            MCMF::Edge edge = mcmf.edges[id];
+            if (edge.cap == 0) {
+                cout << index_i + 1 << " " << edge.to - n + 1 << endl;
+            }
+        }
+    }
 }
 
 int main() {
