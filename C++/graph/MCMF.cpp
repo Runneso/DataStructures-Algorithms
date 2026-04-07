@@ -286,8 +286,8 @@ void solution() {
         u--, v--;
         mcmf.add_edge(u, v, cap, cost);
     }
-
-    cout << mcmf.min_cost_max_flow().second << endl;
+    auto [flow, cost] = mcmf.min_cost_max_flow();
+    cout << flow << ' ' << cost << endl;
 }
 
 int main() {
